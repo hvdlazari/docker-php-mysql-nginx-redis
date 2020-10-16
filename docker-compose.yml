@@ -1,0 +1,81 @@
+version: '3'
+
+services:
+
+# PHP Service
+  app:
+    image: php:fpm
+    environment:
+      SERVICE_NAME: ${APP_NAME}
+      SERVICE_TAGS: ${SERVICE_TAGS}
+    build:
+      context: ${PATH_WORSPACE}
+      dockerfile: ./docker/${PHP_VERSION}/Dockerfile
+    container_name: ${APP_NAME}
+    restart: unless-stopped
+    tty: true
+    working_dir: /var/www
+    volumes:
+      - ${PATH_WORSPACE}:/var/www
+      - ${PATH_WORSPACE}/docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
+    networks:
+      - ${APP_NAME}-network
+
+# Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: ${WEBSERVER_NAME}
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ${PATH_WORSPACE}:/var/www
+      - ${PATH_WORSPACE}/docker/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - ${APP_NAME}-network
+
+#  MySQL Service
+  db:
+    image: mysql:5.7.22
+    container_name: ${DB_NAME}
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      SERVICE_NAME: ${DB_NAME}-mysql
+      SERVICE_TAGS: ${SERVICE_TAGS}
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ${PATH_WORSPACE}/docker/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - ${APP_NAME}-network
+
+# Redis
+  redis:
+    image: redis:alpine
+    container_name: ${REDIS_NAME}
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ${PATH_WORSPACE}/data/redis:/data
+      - ${PATH_WORSPACE}/docker/redis/redis.conf:/root/data/.redis-server/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - ${APP_NAME}-network
+
+# Docker Networks
+networks:
+  <app-network>:
+    driver: bridge
+
+# Volumes
+volumes:
+  dbdata:
+    driver: local
