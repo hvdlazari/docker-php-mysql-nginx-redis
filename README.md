@@ -1,7 +1,7 @@
 # Settings
 - Copy this folder into of the your application
 - Edit the file .env with your settings
-- No docker-compose.yml, where is <app-network>, replace with name of the network app
+- In the docker-compose.yml, where is <app-network>, replace with name of the network app
 
 # Commands
 Create and execute all images in the settings of the docker-compose
