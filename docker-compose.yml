@@ -4,14 +4,13 @@ services:
 
 # PHP Service
   app:
-    image: php:fpm
-    environment:
-      SERVICE_NAME: ${APP_NAME}
-      SERVICE_TAGS: ${SERVICE_TAGS}
     build:
       context: ${PATH_WORSPACE}
       dockerfile: ./docker/${PHP_VERSION}/Dockerfile
-    container_name: ${APP_NAME}
+    environment:
+      SERVICE_NAME: ${APP_NAME}
+      SERVICE_TAGS: ${SERVICE_TAGS}
+    container_name: ${APP_NAME}-app
     restart: unless-stopped
     tty: true
     working_dir: /var/www
@@ -19,27 +18,30 @@ services:
       - ${PATH_WORSPACE}:/var/www
       - ${PATH_WORSPACE}/docker/php/php.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
-      - ${APP_NAME}-network
+      - my-network
 
 # Nginx Service
   webserver:
     image: nginx:alpine
-    container_name: ${WEBSERVER_NAME}
+    container_name: ${WEBSERVER_NAME}-web
     restart: unless-stopped
     tty: true
+    extra_hosts:
+      - "<virtual_host_name>:127.0.0.1"
+      hostname: <virtual_host_name>
+      domainname: <virtual_host_domain>
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ${PATH_WORSPACE}:/var/www
       - ${PATH_WORSPACE}/docker/nginx/conf.d/:/etc/nginx/conf.d/
     networks:
-      - ${APP_NAME}-network
+      - my-network
 
 #  MySQL Service
   db:
     image: mysql:5.7.22
-    container_name: ${DB_NAME}
+    container_name: ${DB_NAME}-db
     restart: unless-stopped
     tty: true
     ports:
@@ -50,15 +52,15 @@ services:
       SERVICE_NAME: ${DB_NAME}-mysql
       SERVICE_TAGS: ${SERVICE_TAGS}
     volumes:
-      - dbdata:/var/lib/mysql/
+      - ${PATH_WORSPACE}/data/dbdata:/var/lib/mysql/
       - ${PATH_WORSPACE}/docker/mysql/my.cnf:/etc/mysql/my.cnf
     networks:
-      - ${APP_NAME}-network
+      - my-network
 
 # Redis
   redis:
     image: redis:alpine
-    container_name: ${REDIS_NAME}
+    container_name: ${REDIS_NAME}-rds
     command: redis-server --appendonly yes
     restart: unless-stopped
     tty: true
@@ -68,11 +70,11 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - ${APP_NAME}-network
+      - my-network
 
 # Docker Networks
 networks:
-  <app-network>:
+  my-network:
     driver: bridge
 
 # Volumes
